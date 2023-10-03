@@ -9,7 +9,7 @@
 
 // Adjust to fit max payload length
 // User payloadLength + 1
-const uint8_t payloadBufferLength = 13;
+const uint8_t payloadBufferLength = 11;
 
 #include <ModbusMaster.h>
 
@@ -268,17 +268,16 @@ void onEvent(ev_t ev)
             // Do not print anything for this event or it will mess up timing.
             break;
 
-        case EV_TXSTART:
-            setTxIndicatorsOn();           
+        case EV_TXSTART:           
             break;               
 
         case EV_JOIN_TXCOMPLETE:
         case EV_TXCANCELED:
-            setTxIndicatorsOn(false);
+
             break;               
 #endif
         case EV_JOINED:
-            setTxIndicatorsOn(false);
+
 
             // Disable link check validation.
             // Link check validation is automatically enabled
@@ -297,7 +296,7 @@ void onEvent(ev_t ev)
 
         case EV_TXCOMPLETE:
             // Transmit completed, includes waiting for RX windows.
-            setTxIndicatorsOn(false);   
+  
 
             // Check if downlink was received
             if (LMIC.dataLen != 0 || LMIC.dataBeg != 0)
@@ -369,7 +368,7 @@ lmic_tx_error_t scheduleUplink(uint8_t fPort, uint8_t* data, uint8_t dataLength,
     {
         #ifdef CLASSIC_LMIC
             // For MCCI_LMIC this will be handled in EV_TXSTART        
-            setTxIndicatorsOn();  
+
         #endif        
     }
     else
@@ -477,7 +476,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
         // Schedule uplink message if possible
         if (LMIC.opmode & OP_TXRXPEND)
         {
-
+            // do nothing
         }
         else
         {
@@ -485,17 +484,15 @@ void processWork(ostime_t doWorkJobTimeStamp)
             uint8_t fPort = 10;
             payloadBuffer[0] = counterValue >> 8;
             payloadBuffer[1] = counterValue & 0xFF;
-            payloadBuffer[2] = 0x77;
-            payloadBuffer[3] = modbus;
+            payloadBuffer[2] = modbus;
+            payloadBuffer[3] = 0x77;
             payloadBuffer[4] = volt >> 8;
             payloadBuffer[5] = volt & 0xFF;
-            payloadBuffer[6] = 0x77;
-            payloadBuffer[7] = test[0] >> 8;
-            payloadBuffer[8] = test[0] & 0xFF;
-            payloadBuffer[9] = test[1] >> 8;
-            payloadBuffer[10] = test[1] & 0xFF;
-            payloadBuffer[11] = 0x77;
-            uint8_t payloadLength = 12;
+            payloadBuffer[6] = test[0] >> 8;
+            payloadBuffer[7] = test[0] & 0xFF;
+            payloadBuffer[8] = test[1] >> 8;
+            payloadBuffer[9] = test[1] & 0xFF;
+            uint8_t payloadLength = 10;
 
             scheduleUplink(fPort, payloadBuffer, payloadLength);
         }

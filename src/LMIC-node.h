@@ -142,7 +142,7 @@ enum class ActivationMode {OTAA, ABP};
 #endif // LMIC_MCCI   
 
 
-#if defined(USE_SERIAL) || defined(USE_DISPLAY)
+#if defined(USE_SERIAL) 
 
     #ifdef MCCI_LMIC   
         static const char * const lmicEventNames[] = { LMIC_EVENT_NAME_TABLE__INIT };
@@ -151,116 +151,14 @@ enum class ActivationMode {OTAA, ABP};
         static const char * const lmicEventNames[] = { LEGACY_LMIC_EVENT_NAME_TABLE__INIT };
     #endif
         
-
-    void printChars(Print& printer, char ch, uint8_t count, bool linefeed = false)
-    {
-        for (uint8_t i = 0; i < count; ++i)
-        {
-            printer.print(ch);
-        }
-        if (linefeed)
-        {
-            printer.println();
-        }
-    }
+ 
+#endif  // USE_SERIAL
 
 
-    void printSpaces(Print& printer, uint8_t count, bool linefeed = false)
-    {
-        printChars(printer, ' ', count, linefeed);
-    }
-
-
-    void printHex(Print& printer, uint8_t* bytes, size_t length = 1, bool linefeed = false, char separator = 0)
-    {
-        for (size_t i = 0; i < length; ++i)
-        {
-            if (i > 0 && separator != 0)
-            {
-                printer.print(separator);
-            }
-            if (bytes[i] <= 0x0F)
-            {
-                printer.print('0');
-            }
-            printer.print(bytes[i], HEX);        
-        }
-        if (linefeed)
-        {
-            printer.println();
-        }
-    }
-
-
-    void setTxIndicatorsOn(bool on = true)
-    {
-        if (on)
-        {
-            #ifdef USE_LED
-                led.on();
-            #endif
-            #ifdef USE_DISPLAY
-                displayTxSymbol(true);
-            #endif           
-        }
-        else
-        {
-            #ifdef USE_LED
-                led.off();
-            #endif
-            #ifdef USE_DISPLAY
-                displayTxSymbol(false);
-            #endif           
-        }        
-    }
-    
-#endif  // USE_SERIAL || USE_DISPLAY
-
-
-#ifdef USE_DISPLAY 
-    uint8_t transmitSymbol[8] = {0x18, 0x18, 0x00, 0x24, 0x99, 0x42, 0x3c, 0x00}; 
-    #define ROW_0             0
-    #define ROW_1             1
-    #define ROW_2             2
-    #define ROW_3             3
-    #define ROW_4             4
-    #define ROW_5             5
-    #define ROW_6             6
-    #define ROW_7             7    
-    #define HEADER_ROW        ROW_0
-    #define DEVICEID_ROW      ROW_1
-    #define INTERVAL_ROW      ROW_2
-    #define TIME_ROW          ROW_4
-    #define EVENT_ROW         ROW_5
-    #define STATUS_ROW        ROW_6
-    #define FRMCNTRS_ROW      ROW_7
-    #define COL_0             0
-    #define ABPMODE_COL       10
-    #define CLMICSYMBOL_COL   14
-    #define TXSYMBOL_COL      15
-
-    void initDisplay()
-    {
-        display.begin();
-        display.setFont(u8x8_font_victoriamedium8_r); 
-    }
-
-    void displayTxSymbol(bool visible = true)
-    {
-        if (visible)
-        {
-            display.drawTile(TXSYMBOL_COL, ROW_0, 1, transmitSymbol);
-        }
-        else
-        {
-            display.drawGlyph(TXSYMBOL_COL, ROW_0, char(0x20));
-        }
-    }    
-#endif // USE_DISPLAY
 
 
 #ifdef USE_SERIAL
-    bool initSerial(unsigned long speed = 115200, int16_t timeoutSeconds = 0)
+    bool initSerial(unsigned long speed = 9600, int16_t timeoutSeconds = 0)
     {
         // Initializes the serial port.
         // Optionally waits for serial port to be ready.
@@ -272,48 +170,6 @@ enum class ActivationMode {OTAA, ABP};
         //          false when not ready.
 
         serial.begin(speed);
-
-        #if WAITFOR_SERIAL_S != 0
-            if (timeoutSeconds != 0)
-            {   
-                bool indefinite = (timeoutSeconds < 0);
-                uint16_t secondsLeft = timeoutSeconds; 
-                #ifdef USE_DISPLAY
-                    display.setCursor(0, ROW_1);
-                    display.print(F("Waiting for"));
-                    display.setCursor(0,  ROW_2);                
-                    display.print(F("serial port"));
-                #endif
-
-                while (!serial && (indefinite || secondsLeft > 0))
-                {
-                    if (!indefinite)
-                    {
-                        #ifdef USE_DISPLAY
-                            display.clearLine(ROW_4);
-                            display.setCursor(0, ROW_4);
-                            display.print(F("timeout in "));
-                            display.print(secondsLeft);
-                            display.print('s');
-                        #endif
-                        --secondsLeft;
-                    }
-                    delay(1000);
-                }  
-                #ifdef USE_DISPLAY
-                    display.setCursor(0, ROW_4);
-                    if (serial)
-                    {
-                        display.print(F("Connected"));
-                    }
-                    else
-                    {
-                        display.print(F("NOT connected"));
-                    }
-                #endif
-            }
-        #endif
-
         return serial;
     }
 #endif

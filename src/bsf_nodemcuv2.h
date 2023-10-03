@@ -44,7 +44,7 @@
  *                SCK   <――――――――――>  D5 / 14  (SCK)
  *                RST   <――――――――――>   -       Not connected (or connect to NodeMCU RST)
  *                DIO0  <――――――――――>  D1 /  5  (SCL)
- *                DIO1  <――――――――――>  D2 /  6  (SDA)
+ *                DIO1  <――――――――――>  D2 /  4  (SDA)
  *                DIO2                 -       Not needed for LoRa.
  * 
  *  Docs:         https://docs.platformio.org/en/latest/boards/espressif8266/nodemcuv2.html
@@ -102,16 +102,8 @@ const lmic_pinmap lmic_pins = {
 #define LORA_DIO2     LMIC_UNUSED_PIN
 #define LORA_RXTX     LMIC_UNUSED_PIN
 
+
 HardwareSerial& serial = Serial;
- 
-
-#ifdef USE_LED
-    EasyLed led(LED_BUILTIN, EasyLed::ActiveLevel::Low);
-#endif
-
-#ifdef USE_DISPLAY
-    #error "Invalid option: USE_DISPLAY. I2C and display are not supported due to shortage of available GPIO pins."
-#endif
 
 
 bool boardInit(InitType initType)
