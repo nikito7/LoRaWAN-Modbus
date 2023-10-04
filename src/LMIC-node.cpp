@@ -1,20 +1,35 @@
-// Credits:
-// http
-
 #include "LMIC-node.h"
-
-//  █ █ █▀▀ █▀▀ █▀▄   █▀▀ █▀█ █▀▄ █▀▀   █▀▄ █▀▀ █▀▀ ▀█▀ █▀█
-//  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▄ █▀▀ █ █  █  █ █
-//  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀
+#include "ModbusMaster.h"
+#include "Preferences.h"
 
 // Adjust to fit max payload length
 // User payloadLength + 1
-const uint8_t payloadBufferLength = 11;
-
-#include <ModbusMaster.h>
+const uint8_t payloadBufferLength = 8;
 
 // ModbusMaster object
 ModbusMaster node;
+
+uint8_t hanCNT = 0;
+uint8_t hanEB = 3;
+
+// Clock
+uint16_t hanYY = 0;
+uint8_t hanMT = 0;
+uint8_t hanDD = 0;
+uint8_t hanWD = 0;
+uint8_t hanHH = 0;
+uint8_t hanMM = 0;
+uint8_t hanSS = 0;
+
+// V A mono
+uint16_t hanVL1 = 0;
+uint16_t hanCL1 = 0;
+// V A tri
+uint16_t hanVL2 = 0;
+uint16_t hanCL2 = 0;
+uint16_t hanVL3 = 0;
+uint16_t hanCL3 = 0;
+uint16_t hanCL7 = 0;
 
 //  █ █ █▀▀ █▀▀ █▀▄   █▀▀ █▀█ █▀▄ █▀▀   █▀▀ █▀█ █▀▄
 //  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▀ █ █ █ █
@@ -423,39 +438,47 @@ void processWork(ostime_t doWorkJobTimeStamp)
     // reading sensor and GPS data and schedule uplink
     // messages if anything needs to be transmitted.
 
-
     // EASYHAN MODBUS BEGIN
-  
-    uint8_t modbus = 0;
+
     uint8_t result;
 
-    // slave: read (1) 16-bit register
+    // Clock ( 12 bytes )
 
-    uint16_t volt = 0;
-    result = node.readInputRegisters(0x006c, 1);
+    result = node.readInputRegisters(0x0001, 1);
     if (result == node.ku8MBSuccess)
     {
-      volt = node.getResponseBuffer(0);
-    } else {
-      modbus = 1;
+      hanYY = node.getResponseBuffer(0);
+      hanMT = node.getResponseBuffer(1) >> 8;
+      hanDD = node.getResponseBuffer(1) & 0xFF;
+      hanWD = node.getResponseBuffer(2) >> 8;
+      hanHH = node.getResponseBuffer(2) & 0xFF;
+      hanMM = node.getResponseBuffer(3) >> 8;
+      hanSS = node.getResponseBuffer(3) & 0xFF;
     }
     delay(1000);
 
-    // slave: read (2) 16-bit register (test)
+    // V A
 
-    uint16_t test[2];
-    test[0] = 0;
-    test[1] = 0;
-
-    result = node.readInputRegisters(0x006c, 2);
-    if (result == node.ku8MBSuccess)
+    if (hanEB == 3)
     {
-      test[0] = node.getResponseBuffer(0);
-      test[1] = node.getResponseBuffer(1);
-    } else {
-      modbus = 2;
+      result = node.readInputRegisters(0x006c, 7);
+      if (result == node.ku8MBSuccess)
+      {
+        hanVL1 = node.getResponseBuffer(0);
+        hanCL1 = node.getResponseBuffer(1);
+      }
+    }
+    else
+    {
+      result = node.readInputRegisters(0x006c, 2);
+      if (result == node.ku8MBSuccess)
+      {
+        hanVL1 = node.getResponseBuffer(0);
+        hanCL1 = node.getResponseBuffer(1);
+      }
     }
     delay(1000);
+
 
     // EASYHAN MODBUS EOF
 
@@ -482,19 +505,24 @@ void processWork(ostime_t doWorkJobTimeStamp)
         {
             // Prepare uplink payload.
             uint8_t fPort = 10;
-            payloadBuffer[0] = counterValue >> 8;
-            payloadBuffer[1] = counterValue & 0xFF;
-            payloadBuffer[2] = modbus;
-            payloadBuffer[3] = 0x77;
-            payloadBuffer[4] = volt >> 8;
-            payloadBuffer[5] = volt & 0xFF;
-            payloadBuffer[6] = test[0] >> 8;
-            payloadBuffer[7] = test[0] & 0xFF;
-            payloadBuffer[8] = test[1] >> 8;
-            payloadBuffer[9] = test[1] & 0xFF;
-            uint8_t payloadLength = 10;
+            payloadBuffer[0] = hanHH;
+            payloadBuffer[1] = hanMM;
+            payloadBuffer[2] = hanSS;
+            payloadBuffer[3] = hanVL1 >> 8;
+            payloadBuffer[4] = hanVL1 & 0xFF;
+            payloadBuffer[5] = hanCL1 >> 8;
+            payloadBuffer[6] = hanCL1 & 0xFF;
+            uint8_t payloadLength = 7;
 
             scheduleUplink(fPort, payloadBuffer, payloadLength);
+
+            // archived
+            //payloadBuffer[0] = hanYY >> 8;
+            //payloadBuffer[1] = hanYY & 0xFF;
+            //payloadBuffer[2] = hanMT;
+            //payloadBuffer[3] = hanDD;
+            //payloadBuffer[4] = hanWD;
+            // eof
         }
     }
 }    
@@ -510,11 +538,10 @@ void processDownlink(ostime_t txCompleteTimestamp, uint8_t fPort, uint8_t* data,
     // (e.g. from the TTN Console) with single byte value resetCmd on port cmdPort.
 
     const uint8_t cmdPort = 100;
-    const uint8_t resetCmd= 0xC0;
+    const uint8_t resetCmd = 0xC0;
 
     if (fPort == cmdPort && dataLength == 1 && data[0] == resetCmd)
     {
-
         ostime_t timestamp = os_getTime();
         resetCounter();
     }          
