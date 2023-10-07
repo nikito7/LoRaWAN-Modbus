@@ -2,18 +2,63 @@ function decodeUplink(input) {
     var data = {};
     var warnings = [];
 
-    if (input.fPort == 10) {
+    if (input.fPort == 70) {
         data.HH = input.bytes[0];
         data.MM = input.bytes[1];
         data.SS = input.bytes[2];
-        data.Clock = ("0" + data.HH).slice(-2) + ":" + ("0" + data.MM).slice(-2) + ":" + ("0" + data.SS).slice(-2);    
-        data.VL1 = ((input.bytes[3] << 8) + input.bytes[4]) / 10.0;
-        data.CL1 = ((input.bytes[5] << 8) + input.bytes[6]) / 10.0;
-
-        //data.Year = (input.bytes[0] << 8) + input.bytes[1];
-        //data.Month = input.bytes[2];
-        //data.Day = input.bytes[3];
-        //data.WeekDay = input.bytes[4];
+        data.AAc = ("0" + data.HH).slice(-2)
+                 + ":" + ("0" + data.MM).slice(-2)
+                 + ":" + ("0" + data.SS).slice(-2);    
+        data.VL1 = ((input.bytes[3] << 8)
+                 + input.bytes[4]) / 10.0;
+        data.CL1 = ((input.bytes[5] << 8)
+                 + input.bytes[6]) / 10.0;
+        data.VL2 = ((input.bytes[7] << 8)
+                 + input.bytes[8]) / 10.0;
+        data.CL2 = ((input.bytes[9] << 8)
+                 + input.bytes[10]) / 10.0;
+        data.VL3 = ((input.bytes[11] << 8)
+                 + input.bytes[12]) / 10.0;
+        data.CL3 = ((input.bytes[13] << 8)
+                 + input.bytes[14]) / 10.0;
+        data.CLT = ((input.bytes[15] << 8)
+                 + input.bytes[16]) / 10.0;
+    }
+    else if (input.fPort == 71) {
+        data.HH = input.bytes[0];
+        data.MM = input.bytes[1];
+        data.SS = input.bytes[2];
+        data.AAc = ("0" + data.HH).slice(-2)
+                 + ":" + ("0" + data.MM).slice(-2)
+                 + ":" + ("0" + data.SS).slice(-2);    
+        data.API = ((input.bytes[3] << 24)
+                 + (input.bytes[4] << 16)
+                 + (input.bytes[5] << 8)
+                 + input.bytes[6]);
+        data.APE = ((input.bytes[7] << 24)
+                 + (input.bytes[8] << 16)
+                 + (input.bytes[9] << 8)
+                 + input.bytes[10]);
+    }
+    else if (input.fPort == 72) {
+        data.HH = input.bytes[0];
+        data.MM = input.bytes[1];
+        data.SS = input.bytes[2];
+        data.AAc = ("0" + data.HH).slice(-2)
+                 + ":" + ("0" + data.MM).slice(-2)
+                 + ":" + ("0" + data.SS).slice(-2);    
+        data.TET1 = ((input.bytes[3] << 24)
+                 + (input.bytes[4] << 16)
+                 + (input.bytes[5] << 8)
+                 + input.bytes[6]) / 1000.000;
+        data.TET2 = ((input.bytes[7] << 24)
+                 + (input.bytes[8] << 16)
+                 + (input.bytes[9] << 8)
+                 + input.bytes[10]) / 1000.000;
+        data.TET3 = ((input.bytes[11] << 24)
+                 + (input.bytes[12] << 16)
+                 + (input.bytes[13] << 8)
+                 + input.bytes[14]) / 1000.000;
     }
     else {
         warnings.push("Unsupported fPort");

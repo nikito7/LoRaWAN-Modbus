@@ -1,35 +1,13 @@
 #include "LMIC-node.h"
-#include "ModbusMaster.h"
 #include "Preferences.h"
+#include "ModbusMaster.h"
 
 // Adjust to fit max payload length
-// User payloadLength + 1
-const uint8_t payloadBufferLength = 8;
+const uint8_t payloadBufferLength = 35;
 
-// ModbusMaster object
 ModbusMaster node;
 
-uint8_t hanCNT = 0;
-uint8_t hanEB = 3;
-
-// Clock
-uint16_t hanYY = 0;
-uint8_t hanMT = 0;
-uint8_t hanDD = 0;
-uint8_t hanWD = 0;
-uint8_t hanHH = 0;
-uint8_t hanMM = 0;
-uint8_t hanSS = 0;
-
-// V A mono
-uint16_t hanVL1 = 0;
-uint16_t hanCL1 = 0;
-// V A tri
-uint16_t hanVL2 = 0;
-uint16_t hanCL2 = 0;
-uint16_t hanVL3 = 0;
-uint16_t hanCL3 = 0;
-uint16_t hanCL7 = 0;
+#include "han.h"
 
 //  █ █ █▀▀ █▀▀ █▀▄   █▀▀ █▀█ █▀▄ █▀▀   █▀▀ █▀█ █▀▄
 //  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▀ █ █ █ █
@@ -438,11 +416,15 @@ void processWork(ostime_t doWorkJobTimeStamp)
     // reading sensor and GPS data and schedule uplink
     // messages if anything needs to be transmitted.
 
+    // # # # # # # # # # #
     // EASYHAN MODBUS BEGIN
+    // # # # # # # # # # #
 
     uint8_t result;
 
+    // # # # # # # # # # #
     // Clock ( 12 bytes )
+    // # # # # # # # # # #
 
     result = node.readInputRegisters(0x0001, 1);
     if (result == node.ku8MBSuccess)
@@ -457,7 +439,9 @@ void processWork(ostime_t doWorkJobTimeStamp)
     }
     delay(1000);
 
-    // V A
+    // # # # # # # # # # #
+    // Voltage Current
+    // # # # # # # # # # #
 
     if (hanEB == 3)
     {
@@ -466,6 +450,11 @@ void processWork(ostime_t doWorkJobTimeStamp)
       {
         hanVL1 = node.getResponseBuffer(0);
         hanCL1 = node.getResponseBuffer(1);
+        hanVL2 = node.getResponseBuffer(2);
+        hanCL2 = node.getResponseBuffer(3);
+        hanVL3 = node.getResponseBuffer(4);
+        hanCL3 = node.getResponseBuffer(5);
+        hanCLT = node.getResponseBuffer(6);
       }
     }
     else
@@ -479,16 +468,100 @@ void processWork(ostime_t doWorkJobTimeStamp)
     }
     delay(1000);
 
+    // # # # # # # # # # #
+    // Active Power Import/Export 73 (tri)
+    // Power Factor (mono) (79..)
+    // # # # # # # # # # #
 
+    if (hanEB == 3)
+    {
+      result = node.readInputRegisters(0x0073, 8);
+      if (result == node.ku8MBSuccess)
+      {
+        hanAPI1 = node.getResponseBuffer(1) | node.getResponseBuffer(0) << 16;
+        hanAPE1 = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
+        hanAPI2 = node.getResponseBuffer(5) | node.getResponseBuffer(4) << 16;
+        hanAPE2 = node.getResponseBuffer(7) | node.getResponseBuffer(6) << 16;
+        hanAPI3 = node.getResponseBuffer(9) | node.getResponseBuffer(8) << 16;
+        hanAPE3 = node.getResponseBuffer(11) | node.getResponseBuffer(10) << 16;
+        hanAPI = node.getResponseBuffer(13) | node.getResponseBuffer(12) << 16;
+        hanAPE = node.getResponseBuffer(15) | node.getResponseBuffer(14) << 16;
+      }
+    }
+    else
+    {
+      result = node.readInputRegisters(0x0079, 3);
+      if (result == node.ku8MBSuccess)
+      {
+        hanAPI = node.getResponseBuffer(1) | node.getResponseBuffer(0) << 16;
+        hanAPE = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
+        hanPF = node.getResponseBuffer(4);
+      }
+    }
+    delay(1000);
+
+    // # # # # # # # # # #
+    // Power Factor (7B) / Frequency (7F)
+    // Power Factor (tri)
+    // Frequency (mono)
+    // # # # # # # # # # #
+
+    if (hanEB == 3)
+    {
+      result = node.readInputRegisters(0x007b, 5);
+      if (result == node.ku8MBSuccess)
+      {
+        hanPF = node.getResponseBuffer(0);
+        hanPF1 = node.getResponseBuffer(1);
+        hanPF2 = node.getResponseBuffer(2);
+        hanPF3 = node.getResponseBuffer(3);
+        hanFreq = node.getResponseBuffer(4);
+      }
+    }
+    else
+    {
+      result = node.readInputRegisters(0x007f, 1);
+      if (result == node.ku8MBSuccess)
+      {
+        hanFreq = node.getResponseBuffer(0);
+      }
+    }
+    delay(1000); 
+
+    // # # # # # # # # # #
+    // Total Energy Tarifas (kWh) 26
+    // # # # # # # # # # #
+
+    result = node.readInputRegisters(0x0026, 3);
+    if (result == node.ku8MBSuccess)
+    {
+      hanTET1 = node.getResponseBuffer(1) | node.getResponseBuffer(0) << 16;
+      hanTET2 = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
+      hanTET3 = node.getResponseBuffer(5) | node.getResponseBuffer(4) << 16;
+    }
+    delay(1000);
+
+    // # # # # # # # # # #
+    // Total Energy (total) (kWh) 16
+    // # # # # # # # # # #
+
+    result = node.readInputRegisters(0x0016, 2);
+    if (result == node.ku8MBSuccess)
+    {
+      hanTEI = node.getResponseBuffer(1) | node.getResponseBuffer(0) << 16;
+      hanTEE = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
+    }
+    delay(1000);
+
+
+    // # # # # # # # # # #
     // EASYHAN MODBUS EOF
+    // # # # # # # # # # #
 
     // Skip processWork if using OTAA and still joining.
     if (LMIC.devaddr != 0)
     {
         // Collect input data.
-        // For simplicity LMIC-node uses a counter to simulate a sensor. 
-        // The counter is increased automatically by getCounterValue()
-        // and can be reset with a 'reset counter' command downlink message.
 
         uint16_t counterValue = getCounterValue();
         ostime_t timestamp = os_getTime();
@@ -503,28 +576,97 @@ void processWork(ostime_t doWorkJobTimeStamp)
         }
         else
         {
-            // Prepare uplink payload.
-            uint8_t fPort = 10;
-            payloadBuffer[0] = hanHH;
-            payloadBuffer[1] = hanMM;
-            payloadBuffer[2] = hanSS;
-            payloadBuffer[3] = hanVL1 >> 8;
-            payloadBuffer[4] = hanVL1 & 0xFF;
-            payloadBuffer[5] = hanCL1 >> 8;
-            payloadBuffer[6] = hanCL1 & 0xFF;
-            uint8_t payloadLength = 7;
+            // # # # # # # # # # #
+            // # # # # # # # # # #
+            // # # # # # # # # # #
+            if (hanCNT == 1)
+            {	
+              uint8_t fPort = 70;
+              payloadBuffer[0] = hanHH;
+              payloadBuffer[1] = hanMM;
+              payloadBuffer[2] = hanSS;
+              payloadBuffer[3] = hanVL1 >> 8;
+              payloadBuffer[4] = hanVL1 & 0xFF;
+              payloadBuffer[5] = hanCL1 >> 8;
+              payloadBuffer[6] = hanCL1 & 0xFF;
+              payloadBuffer[7] = hanVL2 >> 8;
+              payloadBuffer[8] = hanVL2 & 0xFF;
+              payloadBuffer[9] = hanCL2 >> 8;
+              payloadBuffer[10] = hanCL2 & 0xFF;
+              payloadBuffer[11] = hanVL3 >> 8;
+              payloadBuffer[12] = hanVL3 & 0xFF;
+              payloadBuffer[13] = hanCL3 >> 8;
+              payloadBuffer[14] = hanCL3 & 0xFF;
+              payloadBuffer[15] = hanCLT >> 8;
+              payloadBuffer[16] = hanCLT & 0xFF;
 
-            scheduleUplink(fPort, payloadBuffer, payloadLength);
+              uint8_t payloadLength = 17;
+              scheduleUplink(fPort, payloadBuffer, payloadLength);
+            }
+            else if (hanCNT == 3)
+            {
+              uint8_t fPort = 71;
+              payloadBuffer[0] = hanHH;
+              payloadBuffer[1] = hanMM;
+              payloadBuffer[2] = hanSS;
+              payloadBuffer[3] = (hanAPI & 0xFF000000) >> 24;
+              payloadBuffer[4] = (hanAPI & 0x00FF0000) >> 16;
+              payloadBuffer[5] = (hanAPI & 0x0000FF00) >> 8;
+              payloadBuffer[6] = (hanAPI & 0X000000FF);
+              payloadBuffer[7] = (hanAPE & 0xFF000000) >> 24;
+              payloadBuffer[8] = (hanAPE & 0x00FF0000) >> 16;
+              payloadBuffer[9] = (hanAPE & 0x0000FF00) >> 8;
+              payloadBuffer[10] = (hanAPE & 0X000000FF);
 
-            // archived
-            //payloadBuffer[0] = hanYY >> 8;
-            //payloadBuffer[1] = hanYY & 0xFF;
-            //payloadBuffer[2] = hanMT;
-            //payloadBuffer[3] = hanDD;
-            //payloadBuffer[4] = hanWD;
-            // eof
+              uint8_t payloadLength = 11;
+              scheduleUplink(fPort, payloadBuffer, payloadLength);
+            }
+            else if (hanCNT == 5)
+            {
+              uint8_t fPort = 72;
+              payloadBuffer[0] = hanHH;
+              payloadBuffer[1] = hanMM;
+              payloadBuffer[2] = hanSS;
+              payloadBuffer[3] = (hanTET1 & 0xFF000000) >> 24;
+              payloadBuffer[4] = (hanTET1 & 0x00FF0000) >> 16;
+              payloadBuffer[5] = (hanTET1 & 0x0000FF00) >> 8;
+              payloadBuffer[6] = (hanTET1 & 0X000000FF);
+              payloadBuffer[7] = (hanTET2 & 0xFF000000) >> 24;
+              payloadBuffer[8] = (hanTET2 & 0x00FF0000) >> 16;
+              payloadBuffer[9] = (hanTET2 & 0x0000FF00) >> 8;
+              payloadBuffer[10] = (hanTET2 & 0X000000FF);
+              payloadBuffer[11] = (hanTET3 & 0xFF000000) >> 24;
+              payloadBuffer[12] = (hanTET3 & 0x00FF0000) >> 16;
+              payloadBuffer[13] = (hanTET3 & 0x0000FF00) >> 8;
+              payloadBuffer[14] = (hanTET3 & 0X000000FF);
+              payloadBuffer[15] = (hanTEI & 0X000000FF);
+              payloadBuffer[16] = (hanTEI & 0xFF000000) >> 24;
+              payloadBuffer[17] = (hanTEI & 0x00FF0000) >> 16;
+              payloadBuffer[18] = (hanTEI & 0x0000FF00) >> 8;
+              payloadBuffer[19] = (hanTEI & 0X000000FF);
+              payloadBuffer[20] = (hanTEE & 0xFF000000) >> 24;
+              payloadBuffer[21] = (hanTEE & 0x00FF0000) >> 16;
+              payloadBuffer[22] = (hanTEE & 0x0000FF00) >> 8;
+              payloadBuffer[23] = (hanTEE & 0X000000FF);
+
+              uint8_t payloadLength = 24;
+              scheduleUplink(fPort, payloadBuffer, payloadLength);
+            }
+            // # # # # # # # # # #
+            // # # # # # # # # # #
+            // # # # # # # # # # #
+        // LMIC.opmode EOF
         }
+    // LMIC.devaddr EOF
     }
+  if (hanCNT > 6)
+  {
+    hanCNT = 1;
+  }
+  else
+  {
+    hanCNT++;
+  }
 }    
  
 
