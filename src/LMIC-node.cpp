@@ -579,12 +579,13 @@ void processWork(ostime_t doWorkJobTimeStamp)
             // # # # # # # # # # #
             // # # # # # # # # # #
             // # # # # # # # # # #
-            if (hanCNT == 1)
+            if (hanCNT == 1 || hanCNT > 4)
             {	
               uint8_t fPort = 70;
               payloadBuffer[0] = hanHH;
               payloadBuffer[1] = hanMM;
               payloadBuffer[2] = hanSS;
+              // 
               payloadBuffer[3] = hanVL1 >> 8;
               payloadBuffer[4] = hanVL1 & 0xFF;
               payloadBuffer[5] = hanCL1 >> 8;
@@ -599,58 +600,95 @@ void processWork(ostime_t doWorkJobTimeStamp)
               payloadBuffer[14] = hanCL3 & 0xFF;
               payloadBuffer[15] = hanCLT >> 8;
               payloadBuffer[16] = hanCLT & 0xFF;
+              // 
+              payloadBuffer[17] = hanFreq >> 8;
+              payloadBuffer[18] = hanFreq & 0xFF;
+              //
+              payloadBuffer[19] = hanPF >> 8;
+              payloadBuffer[20] = hanPF & 0xFF;
+              payloadBuffer[21] = hanPF1 >> 8;
+              payloadBuffer[22] = hanPF1 & 0xFF;
+              payloadBuffer[23] = hanPF2 >> 8;
+              payloadBuffer[24] = hanPF2 & 0xFF;
+              payloadBuffer[25] = hanPF3 >> 8;
+              payloadBuffer[26] = hanPF3 & 0xFF;
 
-              uint8_t payloadLength = 17;
+              uint8_t payloadLength = 27;
               scheduleUplink(fPort, payloadBuffer, payloadLength);
             }
-            else if (hanCNT == 3)
+            else if (hanCNT == 2)
             {
               uint8_t fPort = 71;
               payloadBuffer[0] = hanHH;
               payloadBuffer[1] = hanMM;
               payloadBuffer[2] = hanSS;
+              // 
               payloadBuffer[3] = (hanAPI & 0xFF000000) >> 24;
               payloadBuffer[4] = (hanAPI & 0x00FF0000) >> 16;
               payloadBuffer[5] = (hanAPI & 0x0000FF00) >> 8;
               payloadBuffer[6] = (hanAPI & 0X000000FF);
+              // 
               payloadBuffer[7] = (hanAPE & 0xFF000000) >> 24;
               payloadBuffer[8] = (hanAPE & 0x00FF0000) >> 16;
               payloadBuffer[9] = (hanAPE & 0x0000FF00) >> 8;
               payloadBuffer[10] = (hanAPE & 0X000000FF);
+              // 32bits to 16bits
+              payloadBuffer[11] = (hanAPI1 & 0x0000FF00) >> 8;
+              payloadBuffer[12] = (hanAPI1 & 0X000000FF);
+              payloadBuffer[13] = (hanAPE1 & 0x0000FF00) >> 8;
+              payloadBuffer[14] = (hanAPE1 & 0X000000FF);
+              //
+              payloadBuffer[15] = (hanAPI2 & 0x0000FF00) >> 8;
+              payloadBuffer[16] = (hanAPI2 & 0X000000FF);
+              payloadBuffer[17] = (hanAPE2 & 0x0000FF00) >> 8;
+              payloadBuffer[18] = (hanAPE2 & 0X000000FF);
+              //
+              payloadBuffer[19] = (hanAPI3 & 0x0000FF00) >> 8;
+              payloadBuffer[20] = (hanAPI3 & 0X000000FF);
+              payloadBuffer[21] = (hanAPE3 & 0x0000FF00) >> 8;
+              payloadBuffer[22] = (hanAPE3 & 0X000000FF);
 
-              uint8_t payloadLength = 11;
+              uint8_t payloadLength = 23;
               scheduleUplink(fPort, payloadBuffer, payloadLength);
             }
-            else if (hanCNT == 5)
+            else if (hanCNT == 3)
             {
               uint8_t fPort = 72;
               payloadBuffer[0] = hanHH;
               payloadBuffer[1] = hanMM;
               payloadBuffer[2] = hanSS;
+              // 
               payloadBuffer[3] = (hanTET1 & 0xFF000000) >> 24;
               payloadBuffer[4] = (hanTET1 & 0x00FF0000) >> 16;
               payloadBuffer[5] = (hanTET1 & 0x0000FF00) >> 8;
               payloadBuffer[6] = (hanTET1 & 0X000000FF);
+              // 
               payloadBuffer[7] = (hanTET2 & 0xFF000000) >> 24;
               payloadBuffer[8] = (hanTET2 & 0x00FF0000) >> 16;
               payloadBuffer[9] = (hanTET2 & 0x0000FF00) >> 8;
               payloadBuffer[10] = (hanTET2 & 0X000000FF);
+              // 
               payloadBuffer[11] = (hanTET3 & 0xFF000000) >> 24;
               payloadBuffer[12] = (hanTET3 & 0x00FF0000) >> 16;
               payloadBuffer[13] = (hanTET3 & 0x0000FF00) >> 8;
               payloadBuffer[14] = (hanTET3 & 0X000000FF);
-              payloadBuffer[15] = (hanTEI & 0X000000FF);
-              payloadBuffer[16] = (hanTEI & 0xFF000000) >> 24;
-              payloadBuffer[17] = (hanTEI & 0x00FF0000) >> 16;
-              payloadBuffer[18] = (hanTEI & 0x0000FF00) >> 8;
-              payloadBuffer[19] = (hanTEI & 0X000000FF);
-              payloadBuffer[20] = (hanTEE & 0xFF000000) >> 24;
-              payloadBuffer[21] = (hanTEE & 0x00FF0000) >> 16;
-              payloadBuffer[22] = (hanTEE & 0x0000FF00) >> 8;
-              payloadBuffer[23] = (hanTEE & 0X000000FF);
+              // 
+              payloadBuffer[15] = (hanTEI & 0xFF000000) >> 24;
+              payloadBuffer[16] = (hanTEI & 0x00FF0000) >> 16;
+              payloadBuffer[17] = (hanTEI & 0x0000FF00) >> 8;
+              payloadBuffer[18] = (hanTEI & 0X000000FF);
+              //
+              payloadBuffer[19] = (hanTEE & 0xFF000000) >> 24;
+              payloadBuffer[20] = (hanTEE & 0x00FF0000) >> 16;
+              payloadBuffer[21] = (hanTEE & 0x0000FF00) >> 8;
+              payloadBuffer[22] = (hanTEE & 0X000000FF);
 
-              uint8_t payloadLength = 24;
+              uint8_t payloadLength = 23;
               scheduleUplink(fPort, payloadBuffer, payloadLength);
+            }
+            else if (hanCNT == 4 && hanINF == true)
+            {
+              // reserved
             }
             // # # # # # # # # # #
             // # # # # # # # # # #
@@ -659,7 +697,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
         }
     // LMIC.devaddr EOF
     }
-  if (hanCNT > 6)
+  if (hanCNT > 16)
   {
     hanCNT = 1;
   }

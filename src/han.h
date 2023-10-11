@@ -1,8 +1,8 @@
 // han.h
 
 uint8_t hanCNT = 0;
-uint8_t hanINF = 0;
 uint8_t hanEB = 3;
+bool hanINF = false;
 
 // Clock 01
 uint16_t hanYY = 0;
