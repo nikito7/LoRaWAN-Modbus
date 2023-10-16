@@ -9,6 +9,7 @@ function decodeUplink(input) {
         data.AAc = ("0" + data.HH).slice(-2)
                  + ":" + ("0" + data.MM).slice(-2)
                  + ":" + ("0" + data.SS).slice(-2);
+        // 
         data.VL1 = ((input.bytes[3] << 8)
                  + input.bytes[4]) / 10.0;
         data.CL1 = ((input.bytes[5] << 8)
@@ -43,6 +44,7 @@ function decodeUplink(input) {
         data.AAc = ("0" + data.HH).slice(-2)
                  + ":" + ("0" + data.MM).slice(-2)
                  + ":" + ("0" + data.SS).slice(-2);
+        // 
         data.API = ((input.bytes[3] << 24)
                  + (input.bytes[4] << 16)
                  + (input.bytes[5] << 8)
@@ -72,6 +74,7 @@ function decodeUplink(input) {
         data.AAc = ("0" + data.HH).slice(-2)
                  + ":" + ("0" + data.MM).slice(-2)
                  + ":" + ("0" + data.SS).slice(-2);
+        // 
         data.TET1 = ((input.bytes[3] << 24)
                  + (input.bytes[4] << 16)
                  + (input.bytes[5] << 8)
@@ -92,6 +95,19 @@ function decodeUplink(input) {
                  + (input.bytes[20] << 16)
                  + (input.bytes[21] << 8)
                  + input.bytes[22]) / 1000.0;
+    }
+    else if (input.fPort == 73) {
+        data.HH = input.bytes[0];
+        data.MM = input.bytes[1];
+        data.SS = input.bytes[2];
+        data.AAc = ("0" + data.HH).slice(-2)
+                 + ":" + ("0" + data.MM).slice(-2)
+                 + ":" + ("0" + data.SS).slice(-2);
+        // 
+        data.ERR = ((input.bytes[3] << 8)
+                 + input.bytes[4]);
+        // 
+        data.Type = input.bytes[5];
     }
     else {
         warnings.push("Unsupported fPort");

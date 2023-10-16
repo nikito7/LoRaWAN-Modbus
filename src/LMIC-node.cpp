@@ -423,6 +423,21 @@ void processWork(ostime_t doWorkJobTimeStamp)
     uint8_t result;
 
     // # # # # # # # # # #
+    // Detect EB Type
+    // # # # # # # # # # #
+
+    result = node.readInputRegisters(0x0070, 2);
+    if (result == node.ku8MBSuccess)
+    {
+    hanEB = 3;
+    }
+    else
+    {
+    hanEB = 1;
+    }
+    delay(1000);
+
+    // # # # # # # # # # #
     // Clock ( 12 bytes )
     // # # # # # # # # # #
 
@@ -436,6 +451,10 @@ void processWork(ostime_t doWorkJobTimeStamp)
       hanHH = node.getResponseBuffer(2) & 0xFF;
       hanMM = node.getResponseBuffer(3) >> 8;
       hanSS = node.getResponseBuffer(3) & 0xFF;
+    }
+    else
+    {
+    hanERR++;
     }
     delay(1000);
 
@@ -456,6 +475,10 @@ void processWork(ostime_t doWorkJobTimeStamp)
         hanCL3 = node.getResponseBuffer(5);
         hanCLT = node.getResponseBuffer(6);
       }
+      else
+      {
+      hanERR++;
+      }
     }
     else
     {
@@ -464,6 +487,10 @@ void processWork(ostime_t doWorkJobTimeStamp)
       {
         hanVL1 = node.getResponseBuffer(0);
         hanCL1 = node.getResponseBuffer(1);
+      }
+      else
+      {
+      hanERR++;
       }
     }
     delay(1000);
@@ -487,6 +514,10 @@ void processWork(ostime_t doWorkJobTimeStamp)
         hanAPI = node.getResponseBuffer(13) | node.getResponseBuffer(12) << 16;
         hanAPE = node.getResponseBuffer(15) | node.getResponseBuffer(14) << 16;
       }
+      else
+      {
+      hanERR++;
+      }
     }
     else
     {
@@ -496,6 +527,10 @@ void processWork(ostime_t doWorkJobTimeStamp)
         hanAPI = node.getResponseBuffer(1) | node.getResponseBuffer(0) << 16;
         hanAPE = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
         hanPF = node.getResponseBuffer(4);
+      }
+      else
+      {
+      hanERR++;
       }
     }
     delay(1000);
@@ -517,6 +552,10 @@ void processWork(ostime_t doWorkJobTimeStamp)
         hanPF3 = node.getResponseBuffer(3);
         hanFreq = node.getResponseBuffer(4);
       }
+      else
+      {
+      hanERR++;
+      }
     }
     else
     {
@@ -524,6 +563,10 @@ void processWork(ostime_t doWorkJobTimeStamp)
       if (result == node.ku8MBSuccess)
       {
         hanFreq = node.getResponseBuffer(0);
+      }
+      else
+      {
+      hanERR++;
       }
     }
     delay(1000); 
@@ -539,6 +582,10 @@ void processWork(ostime_t doWorkJobTimeStamp)
       hanTET2 = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
       hanTET3 = node.getResponseBuffer(5) | node.getResponseBuffer(4) << 16;
     }
+    else
+    {
+    hanERR++;
+    }
     delay(1000);
 
     // # # # # # # # # # #
@@ -550,6 +597,10 @@ void processWork(ostime_t doWorkJobTimeStamp)
     {
       hanTEI = node.getResponseBuffer(1) | node.getResponseBuffer(0) << 16;
       hanTEE = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
+    }
+    else
+    {
+    hanERR++;
     }
     delay(1000);
 
@@ -579,7 +630,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
             // # # # # # # # # # #
             // # # # # # # # # # #
             // # # # # # # # # # #
-            if (hanCNT == 1 || hanCNT > 4)
+            if (hanCNT == 1)
             {	
               uint8_t fPort = 70;
               payloadBuffer[0] = hanHH;
@@ -686,9 +737,20 @@ void processWork(ostime_t doWorkJobTimeStamp)
               uint8_t payloadLength = 23;
               scheduleUplink(fPort, payloadBuffer, payloadLength);
             }
-            else if (hanCNT == 4 && hanINF == true)
+            else if (hanCNT == 4)
             {
-              // reserved
+              uint8_t fPort = 73;
+              payloadBuffer[0] = hanHH;
+              payloadBuffer[1] = hanMM;
+              payloadBuffer[2] = hanSS;
+              // 
+              payloadBuffer[3] = hanERR >> 8;
+              payloadBuffer[4] = hanERR & 0xFF;
+              // 
+              payloadBuffer[5] = hanEB;
+
+              uint8_t payloadLength = 6;
+              scheduleUplink(fPort, payloadBuffer, payloadLength);
             }
             // # # # # # # # # # #
             // # # # # # # # # # #
@@ -697,7 +759,8 @@ void processWork(ostime_t doWorkJobTimeStamp)
         }
     // LMIC.devaddr EOF
     }
-  if (hanCNT > 16)
+  // 
+  if (hanCNT == 4)
   {
     hanCNT = 1;
   }
@@ -705,6 +768,12 @@ void processWork(ostime_t doWorkJobTimeStamp)
   {
     hanCNT++;
   }
+  //
+  if (hanERR > 9000 )
+  {
+    hanERR = 0;
+  }
+// EOF processWork
 }    
  
 
