@@ -3,6 +3,7 @@
 uint8_t hanCNT = 0;
 uint8_t hanEB = 99;
 uint16_t hanERR = 0;
+uint16_t hanDTT = 0;
 
 // Clock 01
 uint16_t hanYY = 0;

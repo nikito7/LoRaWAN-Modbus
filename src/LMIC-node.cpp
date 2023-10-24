@@ -194,7 +194,7 @@ void initLmic(bit_t adrEnabled = 1,
               dr_t abpDataRate = DefaultABPDataRate, 
               s1_t abpTxPower = DefaultABPTxPower) 
 {
-    // ostime_t timestamp = os_getTime();
+    ostime_t timestamp = os_getTime();
 
     // Initialize LMIC runtime environment
     os_init();
@@ -361,24 +361,12 @@ lmic_tx_error_t scheduleUplink(uint8_t fPort, uint8_t* data, uint8_t dataLength,
     {
         #ifdef CLASSIC_LMIC
             // For MCCI_LMIC this will be handled in EV_TXSTART        
-
         #endif        
     }
     else
     {
         String errmsg; 
-        #ifdef USE_SERIAL
-            errmsg = "LMIC Error: ";
-            #ifdef MCCI_LMIC
-                errmsg.concat(lmicErrorNames[abs(retval)]);
-            #else
-                errmsg.concat(retval);
-            #endif
-        #endif
-        #ifdef USE_DISPLAY
-            errmsg = "LMIC Err: ";
-            errmsg.concat(retval);
-        #endif         
+        //    
     }
     return retval;    
 }
@@ -387,22 +375,6 @@ lmic_tx_error_t scheduleUplink(uint8_t fPort, uint8_t* data, uint8_t dataLength,
 //  █ █ █▀▀ █▀▀ █▀▄   █▀▀ █▀█ █▀▄ █▀▀   █▀▄ █▀▀ █▀▀ ▀█▀ █▀█
 //  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▄ █▀▀ █ █  █  █ █
 //  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀
-
-
-static volatile uint16_t counter_ = 0;
-
-uint16_t getCounterValue()
-{
-    // Increments counter and returns the new value.
-    delay(50);         // Fake this takes some time
-    return ++counter_;
-}
-
-void resetCounter()
-{
-    // Reset counter to 0
-    counter_ = 0;
-}
 
 
 void processWork(ostime_t doWorkJobTimeStamp)
@@ -429,11 +401,21 @@ void processWork(ostime_t doWorkJobTimeStamp)
     result = node.readInputRegisters(0x0070, 2);
     if (result == node.ku8MBSuccess)
     {
-    hanEB = 3;
+      // 
+      hanDTT = node.getResponseBuffer(0);
+      if (hanDTT > 0)
+      {
+        hanEB = 3;
+      }
+      else
+      {
+        hanEB = 1;
+      }
+      // 
     }
     else
     {
-    hanEB = 1;
+      hanEB = 1;
     }
     delay(1000);
 
@@ -454,7 +436,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
     }
     else
     {
-    hanERR++;
+      hanERR++;
     }
     delay(1000);
 
@@ -490,7 +472,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       }
       else
       {
-      hanERR++;
+        hanERR++;
       }
     }
     delay(1000);
@@ -516,7 +498,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       }
       else
       {
-      hanERR++;
+        hanERR++;
       }
     }
     else
@@ -530,7 +512,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       }
       else
       {
-      hanERR++;
+        hanERR++;
       }
     }
     delay(1000);
@@ -554,7 +536,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       }
       else
       {
-      hanERR++;
+        hanERR++;
       }
     }
     else
@@ -566,7 +548,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       }
       else
       {
-      hanERR++;
+        hanERR++;
       }
     }
     delay(1000); 
@@ -584,7 +566,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
     }
     else
     {
-    hanERR++;
+      hanERR++;
     }
     delay(1000);
 
@@ -600,7 +582,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
     }
     else
     {
-    hanERR++;
+      hanERR++;
     }
     delay(1000);
 
@@ -614,7 +596,6 @@ void processWork(ostime_t doWorkJobTimeStamp)
     {
         // Collect input data.
 
-        uint16_t counterValue = getCounterValue();
         ostime_t timestamp = os_getTime();
 
         // For simplicity LMIC-node will try to send an uplink
@@ -769,7 +750,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
     hanCNT++;
   }
   //
-  if (hanERR > 9000 )
+  if (hanERR > 900 )
   {
     hanERR = 0;
   }
@@ -779,54 +760,34 @@ void processWork(ostime_t doWorkJobTimeStamp)
 
 void processDownlink(ostime_t txCompleteTimestamp, uint8_t fPort, uint8_t* data, uint8_t dataLength)
 {
-    // This function is called from the onEvent() event handler
-    // on EV_TXCOMPLETE when a downlink message was received.
-
-    // Implements a 'reset counter' command that can be sent via a downlink message.
-    // To send the reset counter command to the node, send a downlink message
-    // (e.g. from the TTN Console) with single byte value resetCmd on port cmdPort.
-
-    const uint8_t cmdPort = 100;
-    const uint8_t resetCmd = 0xC0;
-
-    if (fPort == cmdPort && dataLength == 1 && data[0] == resetCmd)
+    if (fPort == 99 && dataLength == 1 && data[0] == 0xC0)
     {
         ostime_t timestamp = os_getTime();
-        resetCounter();
-    }          
+        delay(5000);
+        delay(5000);
+        ESP.restart();
+    }
+    else if (fPort == 99 && dataLength == 1 && data[0] == 0xC1)
+    {
+        ostime_t timestamp = os_getTime();
+        delay(5000);
+        delay(5000);
+        // to do
+    }
 }
-
-
-//  █ █ █▀▀ █▀▀ █▀▄   █▀▀ █▀█ █▀▄ █▀▀   █▀▀ █▀█ █▀▄
-//  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▀ █ █ █ █
-//  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀▀ ▀ ▀ ▀▀ 
 
 
 void setup() 
 {
-    // boardInit(InitType::Hardware) must be called at start of setup() before anything else.
-    bool hardwareInitSucceeded = boardInit(InitType::Hardware);
-
-    #ifdef USE_SERIAL
-        initSerial(MONITOR_SPEED, WAITFOR_SERIAL_S);
-    #endif    
-
-    boardInit(InitType::PostInitSerial);
-
-    if (!hardwareInitSucceeded)
-    {   
-        abort();
-    }
+    delay(1000);
 
     initLmic();
 
-//  █ █ █▀▀ █▀▀ █▀▄   █▀▀ █▀█ █▀▄ █▀▀   █▀▄ █▀▀ █▀▀ ▀█▀ █▀█
-//  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▄ █▀▀ █ █  █  █ █
-//  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀
+    delay(1000);
 
     // Place code for initializing sensors etc. here.
 
-    resetCounter();
+
 
     // modbus
 
@@ -838,10 +799,7 @@ void setup()
     // communicate with Modbus slave ID 1 over Serial (port 0)
     node.begin(1, Serial);
 
-//  █ █ █▀▀ █▀▀ █▀▄   █▀▀ █▀█ █▀▄ █▀▀   █▀▀ █▀█ █▀▄
-//  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▀ █ █ █ █
-//  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀▀ ▀ ▀ ▀▀ 
-
+    // otaa
     if (activationMode == ActivationMode::OTAA)
     {
         LMIC_startJoining();

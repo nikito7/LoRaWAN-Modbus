@@ -106,29 +106,4 @@ const lmic_pinmap lmic_pins = {
 HardwareSerial& serial = Serial;
 
 
-bool boardInit(InitType initType)
-{
-    // This function is used to perform board specific initializations.
-    // Required as part of standard template.
-
-    // InitType::Hardware        Must be called at start of setup() before anything else.
-    // InitType::PostInitSerial  Must be called after initSerial() before other initializations.    
-
-    bool success = true;
-    switch (initType)
-    {
-        case InitType::Hardware:
-            // Note: Serial port and display are not yet initialized and cannot be used use here.
-            // No actions required for this board.
-            break;
-
-        case InitType::PostInitSerial:
-            // Note: If enabled Serial port and display are already initialized here.
-            // No actions required for this board.
-            break;           
-    }
-    return success;
-}
-
-
 #endif  // BSF_NODEMCU_V2_H_
