@@ -108,6 +108,7 @@ function decodeUplink(input) {
                  + input.bytes[4]);
         // 
         data.Type = input.bytes[5];
+        data.Serial = input.bytes[6];
     }
     else {
         warnings.push("Unsupported fPort");

@@ -6,9 +6,6 @@
 #include "lmic.h"
 #include "hal/hal.h"
 
-enum class InitType { Hardware, PostInitSerial };
-enum class PrintTarget { All, Serial, Display };
-
 const dr_t DefaultABPDataRate = DR_SF7;
 const s1_t DefaultABPTxPower =  14;
 

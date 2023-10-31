@@ -1,6 +1,7 @@
 // han.h
 
 uint8_t hanCNT = 0;
+uint8_t hanCFG = 99;
 uint8_t hanEB = 99;
 uint16_t hanERR = 0;
 uint16_t hanDTT = 0;

@@ -7,6 +7,8 @@ const uint8_t payloadBufferLength = 35;
 
 ModbusMaster node;
 
+Preferences prefs;
+
 #include "han.h"
 
 //  █ █ █▀▀ █▀▀ █▀▄   █▀▀ █▀█ █▀▄ █▀▀   █▀▀ █▀█ █▀▄
@@ -729,8 +731,9 @@ void processWork(ostime_t doWorkJobTimeStamp)
               payloadBuffer[4] = hanERR & 0xFF;
               // 
               payloadBuffer[5] = hanEB;
+              payloadBuffer[6] = hanCFG;
 
-              uint8_t payloadLength = 6;
+              uint8_t payloadLength = 7;
               scheduleUplink(fPort, payloadBuffer, payloadLength);
             }
             // # # # # # # # # # #
@@ -767,15 +770,23 @@ void processDownlink(ostime_t txCompleteTimestamp, uint8_t fPort, uint8_t* data,
         delay(5000);
         ESP.restart();
     }
-    else if (fPort == 99 && dataLength == 1 && data[0] == 0xC1)
+    else if (fPort == 99 && dataLength == 1 && data[0] == 0xB1)
     {
         ostime_t timestamp = os_getTime();
+        prefs.putInt("serial", 1);
         delay(5000);
         delay(5000);
-        // to do
+        ESP.restart();
+    }
+    else if (fPort == 99 && dataLength == 1 && data[0] == 0xB2)
+    {
+        ostime_t timestamp = os_getTime();
+        prefs.putInt("serial", 2);
+        delay(5000);
+        delay(5000);
+        ESP.restart();
     }
 }
-
 
 void setup() 
 {
@@ -787,13 +798,23 @@ void setup()
 
     // Place code for initializing sensors etc. here.
 
+    prefs.begin("my-app");
 
+    hanCFG = prefs.getInt("serial", 1);
 
     // modbus
 
     delay(1000);
 
-    Serial.begin(9600);
+    if (hanCFG == 2)
+    {
+      Serial.begin(9600, SERIAL_8N2);
+    }
+    else
+    {
+      Serial.begin(9600, SERIAL_8N1);
+    }
+
     while (!Serial);
 
     // communicate with Modbus slave ID 1 over Serial (port 0)
