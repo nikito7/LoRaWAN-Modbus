@@ -6,9 +6,6 @@
 #include "lmic.h"
 #include "hal/hal.h"
 
-enum class InitType { Hardware, PostInitSerial };
-enum class PrintTarget { All, Serial, Display };
-
 const dr_t DefaultABPDataRate = DR_SF7;
 const s1_t DefaultABPTxPower =  14;
 
@@ -141,38 +138,6 @@ enum class ActivationMode {OTAA, ABP};
                 "EV_RXCOMPLETE\0" "EV_LINK_DEAD\0" "EV_LINK_ALIVE\0"   
 #endif // LMIC_MCCI   
 
-
-#if defined(USE_SERIAL) 
-
-    #ifdef MCCI_LMIC   
-        static const char * const lmicEventNames[] = { LMIC_EVENT_NAME_TABLE__INIT };
-        static const char * const lmicErrorNames[] = { LMIC_ERROR_NAME__INIT };
-    #else
-        static const char * const lmicEventNames[] = { LEGACY_LMIC_EVENT_NAME_TABLE__INIT };
-    #endif
-        
- 
-#endif  // USE_SERIAL
-
-
-
-
-#ifdef USE_SERIAL
-    bool initSerial(unsigned long speed = 9600, int16_t timeoutSeconds = 0)
-    {
-        // Initializes the serial port.
-        // Optionally waits for serial port to be ready.
-        // Will display status and progress on display (if enabled)
-        // which can be useful for tracing (e.g. ATmega328u4) serial port issues.
-        // A negative timeoutSeconds value will wait indefinitely.
-        // A value of 0 (default) will not wait.
-        // Returns: true when serial port ready,
-        //          false when not ready.
-
-        serial.begin(speed);
-        return serial;
-    }
-#endif
 
 
 #endif  // LMIC_NODE_H_
