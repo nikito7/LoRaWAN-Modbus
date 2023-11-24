@@ -378,6 +378,32 @@ lmic_tx_error_t scheduleUplink(uint8_t fPort, uint8_t* data, uint8_t dataLength,
 //  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▄ █▀▀ █ █  █  █ █
 //  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀   ▀▀▀ ▀▀▀ ▀▀  ▀▀▀   ▀▀  ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀
 
+void hanBlink()
+{
+    #ifdef ESP8266
+    digitalWrite(2, LOW);
+    delay(150);
+    digitalWrite(2, HIGH);
+    #endif
+}
+
+void otaaBlink()
+{
+    #ifdef ESP8266
+    digitalWrite(2, LOW);
+    delay(1000);
+    digitalWrite(2, HIGH);
+    delay(1000);
+    digitalWrite(2, LOW);
+    delay(1000);
+    digitalWrite(2, HIGH);
+    delay(1000);
+    digitalWrite(2, LOW);
+    delay(1000);
+    digitalWrite(2, HIGH);
+    delay(1000);
+    #endif
+}
 
 void processWork(ostime_t doWorkJobTimeStamp)
 {
@@ -428,6 +454,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
     result = node.readInputRegisters(0x0001, 1);
     if (result == node.ku8MBSuccess)
     {
+      hanBlink();
       hanYY = node.getResponseBuffer(0);
       hanMT = node.getResponseBuffer(1) >> 8;
       hanDD = node.getResponseBuffer(1) & 0xFF;
@@ -451,6 +478,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       result = node.readInputRegisters(0x006c, 7);
       if (result == node.ku8MBSuccess)
       {
+        hanBlink();
         hanVL1 = node.getResponseBuffer(0);
         hanCL1 = node.getResponseBuffer(1);
         hanVL2 = node.getResponseBuffer(2);
@@ -469,6 +497,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       result = node.readInputRegisters(0x006c, 2);
       if (result == node.ku8MBSuccess)
       {
+        hanBlink();
         hanVL1 = node.getResponseBuffer(0);
         hanCL1 = node.getResponseBuffer(1);
       }
@@ -489,6 +518,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       result = node.readInputRegisters(0x0073, 8);
       if (result == node.ku8MBSuccess)
       {
+        hanBlink();
         hanAPI1 = node.getResponseBuffer(1) | node.getResponseBuffer(0) << 16;
         hanAPE1 = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
         hanAPI2 = node.getResponseBuffer(5) | node.getResponseBuffer(4) << 16;
@@ -508,6 +538,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       result = node.readInputRegisters(0x0079, 3);
       if (result == node.ku8MBSuccess)
       {
+        hanBlink();
         hanAPI = node.getResponseBuffer(1) | node.getResponseBuffer(0) << 16;
         hanAPE = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
         hanPF = node.getResponseBuffer(4);
@@ -530,6 +561,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       result = node.readInputRegisters(0x007b, 5);
       if (result == node.ku8MBSuccess)
       {
+        hanBlink();
         hanPF = node.getResponseBuffer(0);
         hanPF1 = node.getResponseBuffer(1);
         hanPF2 = node.getResponseBuffer(2);
@@ -546,6 +578,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
       result = node.readInputRegisters(0x007f, 1);
       if (result == node.ku8MBSuccess)
       {
+        hanBlink();
         hanFreq = node.getResponseBuffer(0);
       }
       else
@@ -562,6 +595,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
     result = node.readInputRegisters(0x0026, 3);
     if (result == node.ku8MBSuccess)
     {
+      hanBlink();
       hanTET1 = node.getResponseBuffer(1) | node.getResponseBuffer(0) << 16;
       hanTET2 = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
       hanTET3 = node.getResponseBuffer(5) | node.getResponseBuffer(4) << 16;
@@ -579,6 +613,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
     result = node.readInputRegisters(0x0016, 2);
     if (result == node.ku8MBSuccess)
     {
+      hanBlink();
       hanTEI = node.getResponseBuffer(1) | node.getResponseBuffer(0) << 16;
       hanTEE = node.getResponseBuffer(3) | node.getResponseBuffer(2) << 16;
     }
@@ -607,6 +642,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
         if (LMIC.opmode & OP_TXRXPEND)
         {
             // do nothing
+            otaaBlink();
         }
         else
         {
@@ -741,7 +777,7 @@ void processWork(ostime_t doWorkJobTimeStamp)
             // # # # # # # # # # #
         // LMIC.opmode EOF
         }
-    // LMIC.devaddr EOF
+    // LMIC.devaddr if EOF
     }
   // 
   if (hanCNT == 4)
@@ -797,6 +833,10 @@ void setup()
     delay(1000);
 
     // Place code for initializing sensors etc. here.
+
+    #ifdef ESP8266
+    pinMode(2, OUTPUT);
+    #endif
 
     prefs.begin("my-app");
 
