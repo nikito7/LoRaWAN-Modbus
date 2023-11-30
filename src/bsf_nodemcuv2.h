@@ -65,7 +65,8 @@
 #ifndef BSF_NODEMCU_V2_H_
 #define BSF_NODEMCU_V2_H_
 
-#include <ESP8266WiFi.h>
+//#include <ESP8266WiFi.h>
+#include "HardwareSerial.h"
 #include "LMIC-node.h"
 
 #define DEVICEID_DEFAULT "nodemcuv2"  // Default deviceid value

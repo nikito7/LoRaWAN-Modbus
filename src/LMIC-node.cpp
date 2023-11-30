@@ -1,5 +1,4 @@
 #include "LMIC-node.h"
-#include "Preferences.h"
 #include "ModbusMaster.h"
 
 // Adjust to fit max payload length
@@ -7,9 +6,9 @@ const uint8_t payloadBufferLength = 35;
 
 ModbusMaster node;
 
-Preferences prefs;
-
 #include "han.h"
+
+uint16_t txFail = 0;
 
 //  █ █ █▀▀ █▀▀ █▀▄   █▀▀ █▀█ █▀▄ █▀▀   █▀▀ █▀█ █▀▄
 //  █ █ ▀▀█ █▀▀ █▀▄   █   █ █ █ █ █▀▀   █▀▀ █ █ █ █
@@ -387,7 +386,7 @@ void hanBlink()
     #endif
 }
 
-void otaaBlink()
+void errorBlink()
 {
     #ifdef ESP8266
     digitalWrite(2, LOW);
@@ -421,31 +420,6 @@ void processWork(ostime_t doWorkJobTimeStamp)
     // # # # # # # # # # #
 
     uint8_t result;
-
-    // # # # # # # # # # #
-    // Detect EB Type
-    // # # # # # # # # # #
-
-    result = node.readInputRegisters(0x0070, 2);
-    if (result == node.ku8MBSuccess)
-    {
-      // 
-      hanDTT = node.getResponseBuffer(0);
-      if (hanDTT > 0)
-      {
-        hanEB = 3;
-      }
-      else
-      {
-        hanEB = 1;
-      }
-      // 
-    }
-    else
-    {
-      hanEB = 1;
-    }
-    delay(1000);
 
     // # # # # # # # # # #
     // Clock ( 12 bytes )
@@ -642,7 +616,8 @@ void processWork(ostime_t doWorkJobTimeStamp)
         if (LMIC.opmode & OP_TXRXPEND)
         {
             // do nothing
-            otaaBlink();
+            txFail++;
+            errorBlink();
         }
         else
         {
@@ -768,8 +743,11 @@ void processWork(ostime_t doWorkJobTimeStamp)
               // 
               payloadBuffer[5] = hanEB;
               payloadBuffer[6] = hanCFG;
+              // 
+              payloadBuffer[7] = txFail >> 8;
+              payloadBuffer[8] = txFail & 0xFF;
 
-              uint8_t payloadLength = 7;
+              uint8_t payloadLength = 9;
               scheduleUplink(fPort, payloadBuffer, payloadLength);
             }
             // # # # # # # # # # #
@@ -793,6 +771,11 @@ void processWork(ostime_t doWorkJobTimeStamp)
   {
     hanERR = 0;
   }
+  //
+  if (txFail > 900 )
+  {
+    txFail = 0;
+  }
 // EOF processWork
 }    
  
@@ -809,7 +792,7 @@ void processDownlink(ostime_t txCompleteTimestamp, uint8_t fPort, uint8_t* data,
     else if (fPort == 99 && dataLength == 1 && data[0] == 0xB1)
     {
         ostime_t timestamp = os_getTime();
-        prefs.putInt("serial", 1);
+        // 
         delay(5000);
         delay(5000);
         ESP.restart();
@@ -817,7 +800,7 @@ void processDownlink(ostime_t txCompleteTimestamp, uint8_t fPort, uint8_t* data,
     else if (fPort == 99 && dataLength == 1 && data[0] == 0xB2)
     {
         ostime_t timestamp = os_getTime();
-        prefs.putInt("serial", 2);
+        // 
         delay(5000);
         delay(5000);
         ESP.restart();
@@ -838,27 +821,59 @@ void setup()
     pinMode(2, OUTPUT);
     #endif
 
-    prefs.begin("my-app");
-
-    hanCFG = prefs.getInt("serial", 1);
-
     // modbus
 
     delay(1000);
 
-    if (hanCFG == 2)
-    {
-      Serial.begin(9600, SERIAL_8N2);
-    }
-    else
-    {
-      Serial.begin(9600, SERIAL_8N1);
-    }
+    Serial.begin(9600, SERIAL_8N1);
 
     while (!Serial);
 
-    // communicate with Modbus slave ID 1 over Serial (port 0)
     node.begin(1, Serial);
+
+    // detect stop bits
+
+    uint8_t testserial;
+
+    testserial = node.readInputRegisters(0x001, 1);
+    if (testserial == node.ku8MBSuccess)
+    {
+      hanCFG = 1;
+    }
+    else
+    {
+      Serial.end();
+      delay(500);
+      Serial.begin(9600, SERIAL_8N2);
+      hanCFG = 2;
+    }
+
+    // Detect EB Type
+
+    delay(1000);
+
+    testserial = node.readInputRegisters(0x0070, 2);
+    if (testserial == node.ku8MBSuccess)
+    {
+      // 
+      hanDTT = node.getResponseBuffer(0);
+      if (hanDTT > 0)
+      {
+        hanEB = 3;
+      }
+      else
+      {
+        hanEB = 1;
+      }
+      // 
+    }
+    else
+    {
+      hanEB = 1;
+    }
+    delay(1000);
+
+    // # # # # # # # # # #
 
     // otaa
     if (activationMode == ActivationMode::OTAA)
